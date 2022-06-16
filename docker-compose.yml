@@ -1,0 +1,167 @@
+version: '3'
+
+volumes:
+  ecommerce-microservices-redis:
+    name: ecommerce-microservices-redis
+
+networks:
+  ecommerce-microservices:
+    name: ecommerce-microservices
+
+services:
+  ad:
+    container_name: ecommerce-microservices-ad
+    image: leofranzen/ecommerce-microservices-ad:1.0.0
+    ports:
+      - 9555
+    environment:
+      - PORT=9555
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+    networks:
+      - ecommerce-microservices
+
+  cart:
+    container_name: ecommerce-microservices-cart
+    image: leofranzen/ecommerce-microservices-cart:1.0.0
+    ports:
+      - 7070
+    environment:
+      - REDIS_ADDR=ecommerce-microservices-redis:6379
+    networks:
+      - ecommerce-microservices
+
+  checkout:
+    container_name: ecommerce-microservices-checkout
+    image: leofranzen/ecommerce-microservices-checkout:1.0.0
+    ports:
+      - 5050
+    environment:
+      - PORT=5050
+      - PRODUCT_CATALOG_SERVICE_ADDR=ecommerce-microservices-productcatalog:3550
+      - SHIPPING_SERVICE_ADDR=ecommerce-microservices-shipping:50051
+      - PAYMENT_SERVICE_ADDR=ecommerce-microservices-payment:50051
+      - EMAIL_SERVICE_ADDR=ecommerce-microservices-email:5000
+      - CURRENCY_SERVICE_ADDR=ecommerce-microservices-currency:7000
+      - CART_SERVICE_ADDR=ecommerce-microservices-cart:7070
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+    networks:
+      - ecommerce-microservices
+
+  currency:
+    container_name: ecommerce-microservices-currency
+    image: leofranzen/ecommerce-microservices-currency:1.0.0
+    ports:
+      - 7000
+    environment:
+      - PORT=7000
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+      - DISABLE_DEBUGGER=1
+    networks:
+      - ecommerce-microservices
+
+  email:
+    container_name: ecommerce-microservices-email
+    image: leofranzen/ecommerce-microservices-email:1.0.0
+    ports:
+      - 8080
+    environment:
+      - PORT=8080
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+    networks:
+      - ecommerce-microservices
+
+  frontend:
+    container_name: ecommerce-microservices-frontend
+    image: leofranzen/ecommerce-microservices-frontend:1.0.0
+    ports:
+      - 8080:8080
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=ecommerce-microservices-productcatalog:3550
+      - CURRENCY_SERVICE_ADDR=ecommerce-microservices-currency:7000
+      - CART_SERVICE_ADDR=ecommerce-microservices-cart:7070
+      - RECOMMENDATION_SERVICE_ADDR=ecommerce-microservices-recommendation:8080
+      - SHIPPING_SERVICE_ADDR=ecommerce-microservices-shipping:50051
+      - CHECKOUT_SERVICE_ADDR=ecommerce-microservices-checkout:5050
+      - AD_SERVICE_ADDR=ecommerce-microservices-ad:9555
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+    networks:
+      - ecommerce-microservices
+
+  loadgenerator:
+    container_name: ecommerce-microservices-loadgenerator
+    image: leofranzen/ecommerce-microservices-loadgenerator:1.0.0
+    environment:
+      - FRONTEND_ADDR=ecommerce-microservices-frontend:80
+      - USERS=10
+    networks:
+      - ecommerce-microservices
+
+  payment:
+    container_name: ecommerce-microservices-payment
+    image: leofranzen/ecommerce-microservices-payment:1.0.0
+    ports:
+      - 50051
+    environment:
+      - PORT=50051
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+      - DISABLE_DEBUGGER=1
+    networks:
+      - ecommerce-microservices
+
+  productcatalog:
+    container_name: ecommerce-microservices-productcatalog
+    image: leofranzen/ecommerce-microservices-productcatalog:1.0.0
+    ports:
+      - 3550
+    environment:
+      - PORT=3550
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+    networks:
+      - ecommerce-microservices
+
+  recommendation:
+    container_name: ecommerce-microservices-recommendation
+    image: leofranzen/ecommerce-microservices-recommendation:1.0.0
+    ports:
+      - 8080
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=ecommerce-microservices-productcatalog:3550
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+      - DISABLE_DEBUGGER=1
+    networks:
+      - ecommerce-microservices
+
+  redis:
+    container_name: ecommerce-microservices-redis
+    image: redis:6.2.6-alpine3.15
+    ports:
+      - 6379
+    volumes:
+      - ecommerce-microservices-redis:/data/
+    networks:
+      - ecommerce-microservices
+
+  shipping:
+    container_name: ecommerce-microservices-shipping
+    image: leofranzen/ecommerce-microservices-shipping:1.0.0
+    ports:
+      - 50051
+    environment:
+      - PORT=50051
+      - DISABLE_STATS=1
+      - DISABLE_TRACING=1
+      - DISABLE_PROFILER=1
+    networks:
+      - ecommerce-microservices
